@@ -1,9 +1,10 @@
 const admin = require('firebase-admin');
 const serviceAccount = require('./ServiceAccountKey.json'); // Firebase private key
+require('dotenv').config();  // Memuat variabel dari file .env
 
 admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
-    databaseURL: "https://backend-capstone.firebaseio.com"
+    databaseURL: process.env.URLDATABASE 
 });
 
 const db = admin.firestore();
