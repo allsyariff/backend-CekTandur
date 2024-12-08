@@ -1,17 +1,27 @@
-// const { admin } = require('../config/config');
+/* const jwt = require('jsonwebtoken');
 
-// const isAuthenticated = async (req, res, next) => {
-//     const token = req.headers.authorization;
+const authenticateToken = (req, res, next) => {
+    // Ambil token dari header Authorization
+    const token = req.header('Authorization');
 
-//     if (!token) return res.status(403).json({ error: 'No token provided' });
+    if (!token) {
+        return res.status(401).json({
+            status: 401,
+            message: "Access Denied. No token provided."
+        });
+    }
 
-//     try {
-//         await admin.auth().verifyIdToken(token);
-//         next();
-//     } catch (error) {
-//         res.status(401).json({ error: 'Invalid token' });
-//     }
-// };
+    // Verifikasi token
+    jwt.verify(token, 'your-secret-key', (err, user) => {
+        if (err) {
+            return res.status(403).json({
+                status: 403,
+                message: "Invalid token."
+            });
+        }
+        req.user = user; // Simpan user data di req.user
+        next();
+    });
+};
 
-// module.exports = isAuthenticated;
- 
+module.exports = { authenticateToken }; */

@@ -3,32 +3,66 @@ const { v4: uuidv4 } = require('uuid');
 
 exports.registerUser = async (req, res) => {
     const { name, email, password } = req.body;
+
+    // Validasi input
+    if (!name || !email || !password) {
+        return res.status(400).json({
+            status: 400,
+            message: "Missing required fields",
+            error: {
+                details: "Please provide name, email, and password."
+            }
+        });
+    }
+
+    // Validasi panjang password minimal 8 karakter
+    if (password.length < 8) {
+        return res.status(400).json({
+            status: 400,
+            message: "Password too short",
+            error: {
+                details: "Password must be at least 8 characters long."
+            }
+        });
+    }
+
+    // Validasi apakah email memiliki format unik (contoh: harus @gmail.com)
+    if (!email.includes('@')) {
+        return res.status(400).json({
+            status: 400,
+            message: "Invalid email format",
+            error: {
+                details: "Email must contain '@' symbol."
+            }
+        });
+    }
+
+   // Validasi apakah email sudah terdaftar
+   const userQuerySnapshot = await db.collection('users').where('email', '==', email).get();
+   if (!userQuerySnapshot.empty) {
+       return res.status(409).json({  
+           status: 409,
+           message: "Akun sudah terdaftar",  // Pesan untuk user Android
+           error: {
+               details: "The user has already registered with this email address."
+           }
+       });
+   }
+
     const id = uuidv4().replace(/-/g, '').slice(0, 16);
     const insertedAt = new Date().toISOString();
     const updatedAt = insertedAt;
+
     try {
         const userRef = db.collection('users').doc(id);
-        const doc = await userRef.get();
-        if (doc.exists) {
-            return res.status(400).json({
-                status: 400,
-                message: "User already exists",
-                error: {
-                    details: "The user has registered an account with the same email address",
-                }
-            });
-        }
-        await userRef.set({ id, name, email, password, insertedAt, updatedAt });
+        const userData = { id, name, email, password, insertedAt, updatedAt };
+        await userRef.set(userData);
+
         return res.status(201).json({
             status: 201,
             message: "User registered successfully",
-            data: {
-                userId: id,
-                name: name,
-                email: email
-            }
+            data: { id, name, email, insertedAt, updatedAt }
         });
-        
     } catch (error) {
         return res.status(500).json({
             status: 500,
@@ -90,69 +124,45 @@ exports.loginUser = async (req, res) => {
         });
     }
 };
+exports.logoutUser = async (req, res) => {
+    const { email } = req.body;
 
+    try {
+        const userQuerySnapshot = await db.collection('users').where('email', '==', email).get();
 
-// exports.loginUser = async (req, res) => {
-//     const { email, password } = req.body;
-//     try {
-//         const userRef = db.collection('users').doc(email);
-//         const doc = await userRef.get();
-//         if (!doc.exists || doc.data().password !== password) {
-//             return res.status(400).json({
-//                 status: 400,
-//                 message: "Invalid credentials",
-//                 error: {
-//                     details: "Authentication failed. Please check your username and password."
-//                 }
-//             });
-//         }
-//         return res.status(200).json({
-//             status: 200,
-//             message: "User logged in successfully",
-//             data: doc.data()
-//         });
-//     } catch (error) {
-//         return res.status(500).json({
-//             status: 500,
-//             message: "Internal server error",
-//             error: {
-//                 details: error.message
-//             }
-//         });
-//     }
-// };
+        if (userQuerySnapshot.empty) {
+            return res.status(400).json({
+                status: 400,
+                message: "User not found",
+                error: {
+                    details: "Logout failed because the user does not exist."
+                }
+            });
+        }
 
+        const userDoc = userQuerySnapshot.docs[0];
+        const userId = userDoc.id;
+        const userData = userDoc.data();
 
-// const { db } = require('../config/config');
-// const hashPassword = require('../utils/hashPassword');
+        await db.collection('users').doc(userId).update({ isLoggedIn: false });
 
-// const registerUser = async (req, res) => {
-//     const { email, password } = req.body;
+        return res.status(200).json({
+            status: 200,
+            message: "User logged out successfully",
+            data: {
+                userId: userData.id,
+                name: userData.name,
+                email: userData.email
+            }
+        });
 
-//     try {
-//         const hashedPassword = await hashPassword(password);
-//         await db.collection('users').doc(email).set({ email, password: hashedPassword });
-
-//         res.status(201).json({ message: 'User registered successfully' });
-//     } catch (error) {
-//         res.status(500).json({ error: error.message });
-//     }
-// };
-
-// const loginUser = async (req, res) => {
-//     const { email, password } = req.body;
-
-//     try {
-//         const userDoc = await db.collection('users').doc(email).get();
-//         if (!userDoc.exists) return res.status(404).json({ error: 'User not found' });
-
-//         const isValidPassword = await hashPassword.compare(password, userDoc.data().password);
-//         if (!isValidPassword) return res.status(401).json({ error: 'Invalid credentials' });
-
-//         res.status(200).json({ message: 'Login successful' });
-//     } catch (error) {
-//         res.status(500).json({ error: error.message });
-//     }
-// };
-
-// module.exports = { registerUser, loginUser };
+    } catch (error) {
+        return res.status(500).json({
+            status: 500,
+            message: "Internal server error",
+            error: {
+                details: error.message
+            }
+        });
+    }
+};

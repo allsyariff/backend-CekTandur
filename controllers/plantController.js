@@ -1,61 +1,109 @@
+const { v4: uuidv4 } = require('uuid');
+const { db } = require('../config/db');
 const fs = require('fs');
 const path = require('path');
 const plantsFilePath = path.join(__dirname, '../models/plant.json');
 
-// Helper function to read the JSON file
+// Fungsi membaca file JSON
 const readPlantsData = () => {
     const data = fs.readFileSync(plantsFilePath);
     return JSON.parse(data);
 };
 
-// GET all plants
+// Mendapatkan semua tanaman
 exports.getAllPlants = (req, res) => {
     const data = readPlantsData();
     res.json(data.plants);
 };
 
-// Mendapatkan tanaman berdasarkan nama penyakit
-exports.getPlantByDiseaseName = (req, res) => {
-    const diseaseName = req.params.disease_name.toLowerCase();
-    const plants = readPlantsData().plants; // Memanggil plantsData melalui readPlantsData
-    
-    const result = plants.find(plant => 
-        plant.disease_name.toLowerCase() === diseaseName
-    );
-
-    if (result) {
-        res.json(result);
-    } else {
-        res.status(404).json({ message: 'Tanaman dengan nama penyakit tersebut tidak ditemukan' });
-    }
-};
-
-// Mendapatkan tanaman berdasarkan nama tanaman
-exports.getPlantByName = (req, res) => {
-    const plantName = req.params.plant_name.toLowerCase();
-    const plants = readPlantsData().plants; // Memanggil plantsData melalui readPlantsData
-
-    // Mencari tanaman berdasarkan nama yang mirip dengan disease_name
-    const result = plants.find(plant => 
-        plant.name.toLowerCase().includes(plantName) // Cari berdasarkan nama tanaman
-    );
-
-    if (result) {
-        res.json(result);
-    } else {
-        res.status(404).json({ message: 'Tanaman dengan nama tersebut tidak ditemukan' });
-    }
-};
-
-// GET plant by class
+// mendapatkan tanaman berdasarkan class
 exports.getPlantByClass = (req, res) => {
     const data = readPlantsData();
     const plantClass = req.params.class;
     const plant = data.plants[plantClass];
-
+    
     if (plant) {
         res.json(plant);
     } else {
         res.status(404).json({ message: "Plant class not found" });
+    }
+};
+// Fungsi untuk menyimpan historis tanaman
+exports.savePlantHistory = async (req, res) => {
+    const { userId, className, plantName, analysisResult, confidence } = req.body;
+
+    if (!userId || !className || !plantName || !analysisResult || !confidence) {
+        return res.status(400).json({
+            status: 400,
+            message: "Missing required fields",
+            error: {
+                details: "Please provide userId, className, plantName, analysisResult, and confidence."
+            }
+        });
+    }
+
+    // Membuat ID unik untuk historis tanaman
+    const historyId = uuidv4().replace(/-/g, '').slice(0, 16);
+    const timestamp = new Date().toISOString();
+
+    try {
+        // Simpan historis tanaman ke Firestore
+        const historyRef = db.collection('histories').doc(historyId);
+        const historyData = {
+            userId,
+            className,
+            plantName,
+            analysisResult,
+            confidence,
+            timestamp
+        };
+        await historyRef.set(historyData);
+
+        return res.status(201).json({
+            status: 201,
+            message: "Plant history saved successfully",
+            data: historyData
+        });
+    } catch (error) {
+        return res.status(500).json({
+            status: 500,
+            message: "Internal server error",
+            error: {
+                details: error.message
+            }
+        });
+    }
+};
+
+// Fungsi untuk mengambil historis tanaman berdasarkan userId
+exports.getPlantHistory = async (req, res) => {
+    const { userId } = req.params;
+
+    try {
+        // Mendapatkan historis tanaman berdasarkan userId
+        const historyQuerySnapshot = await db.collection('histories').where('userId', '==', userId).get();
+
+        if (historyQuerySnapshot.empty) {
+            return res.status(404).json({
+                status: 404,
+                message: "No plant history found for this user"
+            });
+        }
+
+        const histories = historyQuerySnapshot.docs.map(doc => doc.data());
+
+        return res.status(200).json({
+            status: 200,
+            message: "Plant history retrieved successfully",
+            data: histories
+        });
+    } catch (error) {
+        return res.status(500).json({
+            status: 500,
+            message: "Internal server error",
+            error: {
+                details: error.message
+            }
+        });
     }
 };

@@ -1,10 +1,3 @@
-
-
-
-
-
----
-
 ## Authentication
 ### POST `/api/auth/register`
 - **Description**: Registers a new user.
