@@ -67,3 +67,58 @@
 ### DELETE `/api/users/:userId`
 - **Description**: Deletes a user by userId.
 - **Response**: Returns confirmation of user deletion.
+
+## Plant Management
+### GET `/api/plant`
+- **Description**: Fetches a list of all plants.
+- **Response**: Returns a list of all plants.
+
+### GET `/api/plant/:className`
+- **Description**: Fetches a list of plants based on a specific class.
+- **Response**: Returns a list of plants based on the class.
+- **Example**: `/api/plant/Class1`
+
+### POST `/api/plant/history`
+- **Description**: Logs plant history.
+- **Request Body**:
+  ```json
+  {
+    "userId": "string",
+    "className": "string",
+    "plantName": "string",
+    "analysisResult": "string",
+    "confidence": "number"
+  }
+- **Response**:
+- Success (201 Created):
+  ```json
+  {
+    "status": 201,
+    "message": "Plant history saved successfully",
+    "data": {
+      "userId": "user123",
+      "className": "Class1",
+      "plantName": "Anggur",
+      "analysisResult": "Healthy",
+      "confidence": 95,
+      "timestamp": "2024-12-08T12:34:56.000Z"
+    }
+  }
+  
+
+- Error (400 Bad Request):
+  ```json
+  {
+    "status": 400,
+    "message": "Missing required fields",
+    "error": {
+      "details": "Please provide userId, className, plantName, analysisResult, and confidence."
+    }
+  }
+### GET `/api/plant/history/:userId`
+- **Description**: Fetches a list of plant history for a specific user.
+- **Response**: Returns a list of plant history for the user.
+
+
+
+
