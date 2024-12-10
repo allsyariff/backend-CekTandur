@@ -47,7 +47,8 @@
     "email": "string",
     "password": "string"
   }
-- **Response**: Returns a token for user authentication.
+- **Response**: 
+- succes
 
 ## User Management
 ### GET `/api/users/:userId`

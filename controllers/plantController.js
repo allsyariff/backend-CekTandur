@@ -4,19 +4,16 @@ const fs = require('fs');
 const path = require('path');
 const plantsFilePath = path.join(__dirname, '../models/plant.json');
 
-// Fungsi membaca file JSON
 const readPlantsData = () => {
     const data = fs.readFileSync(plantsFilePath);
     return JSON.parse(data);
 };
 
-// Mendapatkan semua tanaman
 exports.getAllPlants = (req, res) => {
     const data = readPlantsData();
     res.json(data.plants);
 };
 
-// mendapatkan tanaman berdasarkan class
 exports.getPlantByClass = (req, res) => {
     const data = readPlantsData();
     const plantClass = req.params.class;
@@ -28,8 +25,8 @@ exports.getPlantByClass = (req, res) => {
         res.status(404).json({ message: "Plant class not found" });
     }
 };
-// Fungsi untuk menyimpan historis tanaman
-exports.savePlantHistory = async (req, res) => {
+
+/* exports.savePlantHistory = async (req, res) => {
     const { userId, className, plantName, analysisResult, confidence } = req.body;
 
     if (!userId || !className || !plantName || !analysisResult || !confidence) {
@@ -42,12 +39,24 @@ exports.savePlantHistory = async (req, res) => {
         });
     }
 
-    // Membuat ID unik untuk historis tanaman
-    const historyId = uuidv4().replace(/-/g, '').slice(0, 16);
-    const timestamp = new Date().toISOString();
-
     try {
-        // Simpan historis tanaman ke Firestore
+    
+        const userRef = db.collection('users').doc(userId);
+        const userDoc = await userRef.get();
+
+        if (!userDoc.exists) {
+            return res.status(404).json({
+                status: 404,
+                message: "User not found",
+                error: {
+                    details: `The provided userId '${userId}' does not exist in Firestore.`
+                }
+            });
+        }
+
+        const historyId = uuidv4().replace(/-/g, '').slice(0, 16);
+        const timestamp = new Date().toISOString();
+
         const historyRef = db.collection('histories').doc(historyId);
         const historyData = {
             userId,
@@ -75,12 +84,10 @@ exports.savePlantHistory = async (req, res) => {
     }
 };
 
-// Fungsi untuk mengambil historis tanaman berdasarkan userId
 exports.getPlantHistory = async (req, res) => {
     const { userId } = req.params;
 
     try {
-        // Mendapatkan historis tanaman berdasarkan userId
         const historyQuerySnapshot = await db.collection('histories').where('userId', '==', userId).get();
 
         if (historyQuerySnapshot.empty) {
@@ -107,3 +114,4 @@ exports.getPlantHistory = async (req, res) => {
         });
     }
 };
+ */
